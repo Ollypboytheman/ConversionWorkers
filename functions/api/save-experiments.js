@@ -1,8 +1,17 @@
-export async function onRequestPut(context) {
-  const key = context.request.url.split("?key=")[1];
-  const data = await context.request.json();
+export const onRequestPut = async ({ request, env }) => {
+  const { key } = new URL(request.url).searchParams;
 
-  await context.env.EXPERIMENTS_KV.put(key, JSON.stringify(data));
+  if (!key) {
+    return new Response("Missing key", { status: 400 });
+  }
 
-  return new Response("Saved", { status: 200 });
-}
+  const data = await request.json();
+
+  try {
+    await env.EXPERIMENT_KV.put(key, JSON.stringify(data));
+    return new Response("Saved", { status: 200 });
+  } catch (err) {
+    console.error("KV error", err);
+    return new Response("KV write failed", { status: 500 });
+  }
+};
