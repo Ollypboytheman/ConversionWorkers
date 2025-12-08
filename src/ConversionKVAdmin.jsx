@@ -106,6 +106,12 @@ export default function ConversionKVAdmin() {
     }
   };
 
+  if (!res.ok) {
+  // Get detailed error text
+  const errText = await res.text();
+  throw new Error("Failed to save experiment to KV: " + errText);
+}
+  
   return (
     <div className="max-w-3xl mx-auto py-10 space-y-6">
       <h1 className="text-2xl font-bold">Conversion Workers – KV Admin</h1>
