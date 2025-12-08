@@ -8,10 +8,21 @@ export const onRequestPut = async ({ request, env }) => {
   const data = await request.json();
 
   try {
-    await env.EXPERIMENT_KV.put(key, JSON.stringify(data));
+    await env.conversion_workers_experiments.put(key, JSON.stringify(data));
     return new Response("Saved", { status: 200 });
   } catch (err) {
+    // Improved debugging: return more error info
     console.error("KV error", err);
-    return new Response("KV write failed", { status: 500 });
+    return new Response(
+      JSON.stringify({
+        message: "KV write failed",
+        error: err?.message || String(err),
+        stack: err?.stack,
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
   }
 };
