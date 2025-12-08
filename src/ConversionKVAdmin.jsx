@@ -66,11 +66,61 @@ export default function ConversionKVAdmin() {
     ]);
   };
 
-  const handleSubmit = () => {
-    const totalSplit = variations.reduce(
-      (acc, curr) => acc + parseFloat(curr.split || 0),
-      0
+  const handleSubmit = async () => {
+  const totalSplit = variations.reduce(
+    (acc, curr) => acc + parseFloat(curr.split || 0),
+    0
+  );
+
+  if (totalSplit !== 100) {
+    alert("Total split % for all variations must equal 100");
+    return;
+  }
+
+  const payload = {
+    key: experimentKey,
+    target: targetPage,
+    sample: parseFloat(sampleRate),
+    variations: variations.map((v) => ({
+      name: v.name,
+      split: parseFloat(v.split || 0),
+      type: v.type,
+      code: v.code,
+    })),
+  };
+
+  try {
+    const res = await fetch(
+      `https://conversion-kv-api.YOUR-SUBDOMAIN.workers.dev/?key=${encodeURIComponent(
+        experimentKey
+      )}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
     );
+
+    if (!res.ok) {
+      throw new Error("Failed to save experiment to KV");
+    }
+
+    console.log("Saved to KV:", payload);
+
+    // Optionally update local list (just for display purposes)
+    const updated = [
+      ...experiments.filter((e) => e.key !== experimentKey),
+      payload,
+    ];
+    setExperiments(updated);
+    resetForm();
+  } catch (err) {
+    alert("Error saving experiment: " + err.message);
+  }
+};
+
 
     if (totalSplit !== 100) {
       alert("Total split % for all variations must equal 100");
