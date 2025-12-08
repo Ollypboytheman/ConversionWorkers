@@ -2,10 +2,10 @@ name = "conversion-kv-api"
 type = "javascript"
 
 [[kv_namespaces]]
-binding = "EXPERIMENTS"
-id = "2b8992cf7f1b439baf8c4c6bf0f8b261"  # 👈 from your screenshot
+binding = "conversion_workers_experiments"
+id = "2b8992cf7f1b439ba8fc4c6bf0f8b261"  # 👈 from your screenshot
 
 [env.production]
 kv_namespaces = [
-  { binding = "EXPERIMENTS", id = "2b8992cf7f1b439baf8c4c6bf0f8b261" }
+  { binding = "conversion_workers_experiments", id = "2b8992cf7f1b439ba8fc4c6bf0f8b261" }
 ]
