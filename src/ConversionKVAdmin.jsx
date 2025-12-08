@@ -88,24 +88,28 @@ export default function ConversionKVAdmin() {
       );
 
       if (!res.ok) {
-        // Get error details from backend response
-        let errorMsg = "Failed to save experiment to KV";
-        try {
-          // If backend returns JSON, extract it
-          const data = await res.json();
-          errorMsg +=
-            data.error
-              ? `: ${data.error}`
-              : data.message
-              ? `: ${data.message}`
-              : ` (${res.status})`;
-        } catch {
-          // Fallback to raw text
-          const text = await res.text();
-          errorMsg += `: ${text}`;
-        }
-        throw new Error(errorMsg);
-      }
+  let errorMsg = "Failed to save experiment to KV";
+  try {
+    // Try to parse as JSON first
+    const data = await res.json();
+    errorMsg +=
+      data.error
+        ? `: ${data.error}`
+        : data.message
+        ? `: ${data.message}`
+        : ` (${res.status})`;
+    throw new Error(errorMsg);
+  } catch {
+    // If .json() throws, response is not JSON, try .text()
+    try {
+      const text = await res.text();
+      errorMsg += `: ${text}`;
+    } catch {
+      errorMsg += " (unable to read response body)";
+    }
+    throw new Error(errorMsg);
+  }
+}
 
       // update UI locally
       const updated = [
