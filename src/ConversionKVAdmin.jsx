@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ export default function ConversionKVAdmin() {
   const [variations, setVariations] = useState([]);
   const [experiments, setExperiments] = useState([]);
 
-  // Load existing experiments (mocked here for now)
+  // Load experiments from localStorage (for display only)
   useEffect(() => {
     const storedExperiments = localStorage.getItem("experiments");
     if (storedExperiments) {
@@ -20,6 +19,7 @@ export default function ConversionKVAdmin() {
     }
   }, []);
 
+  // Initialize with control variation
   useEffect(() => {
     setVariations([
       {
@@ -67,60 +67,10 @@ export default function ConversionKVAdmin() {
   };
 
   const handleSubmit = async () => {
-  const totalSplit = variations.reduce(
-    (acc, curr) => acc + parseFloat(curr.split || 0),
-    0
-  );
-
-  if (totalSplit !== 100) {
-    alert("Total split % for all variations must equal 100");
-    return;
-  }
-
-  const payload = {
-    key: experimentKey,
-    target: targetPage,
-    sample: parseFloat(sampleRate),
-    variations: variations.map((v) => ({
-      name: v.name,
-      split: parseFloat(v.split || 0),
-      type: v.type,
-      code: v.code,
-    })),
-  };
-
-  try {
-    const res = await fetch(
-      `https://conversion-kv-api.YOUR-SUBDOMAIN.workers.dev/?key=${encodeURIComponent(
-        experimentKey
-      )}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
+    const totalSplit = variations.reduce(
+      (acc, curr) => acc + parseFloat(curr.split || 0),
+      0
     );
-
-    if (!res.ok) {
-      throw new Error("Failed to save experiment to KV");
-    }
-
-    console.log("Saved to KV:", payload);
-
-    // Optionally update local list (just for display purposes)
-    const updated = [
-      ...experiments.filter((e) => e.key !== experimentKey),
-      payload,
-    ];
-    setExperiments(updated);
-    resetForm();
-  } catch (err) {
-    alert("Error saving experiment: " + err.message);
-  }
-};
-
 
     if (totalSplit !== 100) {
       alert("Total split % for all variations must equal 100");
@@ -139,11 +89,37 @@ export default function ConversionKVAdmin() {
       })),
     };
 
-    console.log("Experiment JSON:", JSON.stringify(payload, null, 2));
-    const updated = [...experiments.filter((e) => e.key !== experimentKey), payload];
-    setExperiments(updated);
-    localStorage.setItem("experiments", JSON.stringify(updated));
-    resetForm();
+    try {
+      const res = await fetch(
+        `https://conversion-kv-api.YOUR-SUBDOMAIN.workers.dev/?key=${encodeURIComponent(
+          experimentKey
+        )}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to save experiment to KV");
+      }
+
+      console.log("Saved to KV:", payload);
+
+      // Update local list for display
+      const updated = [
+        ...experiments.filter((e) => e.key !== experimentKey),
+        payload,
+      ];
+      setExperiments(updated);
+      localStorage.setItem("experiments", JSON.stringify(updated));
+      resetForm();
+    } catch (err) {
+      alert("Error saving experiment: " + err.message);
+    }
   };
 
   return (
@@ -166,7 +142,7 @@ export default function ConversionKVAdmin() {
 
           <Input
             type="number"
-            placeholder="Sample % of traffic (e.g. 100 for all traffic)"
+            placeholder="Sample % of traffic (e.g. 100)"
             value={sampleRate}
             onChange={(e) => setSampleRate(e.target.value)}
           />
