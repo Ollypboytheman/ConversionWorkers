@@ -8,7 +8,7 @@ export const onRequestPut = async ({ request, env }) => {
   const data = await request.json();
 
   try {
-    await env.conversion_workers_experiments.put(key, JSON.stringify(data));
+    await env.EXPERIMENT_KV.put(key, JSON.stringify(data));
     return new Response("Saved", { status: 200 });
   } catch (err) {
     // Improved debugging: return more error info
