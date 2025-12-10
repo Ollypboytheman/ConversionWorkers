@@ -239,9 +239,17 @@ export default function ConversionKVAdmin() {
                 <li key={exp.key} className="border rounded p-3">
                   <div className="font-bold text-md mb-1">{exp.key}</div>
                   <div className="text-sm mb-2">
-                    Target: {exp.target} | Sample: {exp.sample}% | Status: {exp.status} | Variations:{" "}
-                    {exp.variations.map((v) => v.name).join(", ")}
+                    Target: {exp.target} | Sample: {exp.sample}% | Status: {exp.status}
+                    <div className="mt-1 ml-2">
+                      <strong>Variations:</strong>
+                      {exp.variations.map((v) => (
+                        <div key={v.name}>
+                          {v.name} — {v.split}% — {v.type}
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => handleEdit(exp)} className="bg-orange-500 hover:bg-orange-600">
                       Edit
