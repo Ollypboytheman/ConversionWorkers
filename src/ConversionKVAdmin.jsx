@@ -11,12 +11,23 @@ export default function ConversionKVAdmin() {
   const [status, setStatus] = useState("Build");
   const [variations, setVariations] = useState([]);
   const [experiments, setExperiments] = useState([]);
+  const [editing, setEditing] = useState(false);
 
+  // Fetch from KV on mount
   useEffect(() => {
-    const stored = localStorage.getItem("experiments");
-    if (stored) setExperiments(JSON.parse(stored));
+    const load = async () => {
+      const res = await fetch("/api/save-experiments");
+      const json = await res.json();
+      const list = Object.entries(json).map(([key, config]) => ({
+        key,
+        ...config,
+      }));
+      setExperiments(list);
+    };
+    load();
   }, []);
 
+  // Init control group
   useEffect(() => {
     setVariations([
       {
@@ -50,6 +61,7 @@ export default function ConversionKVAdmin() {
     setVariations([
       { name: "control", split: "", type: "none", code: "", isControl: true },
     ]);
+    setEditing(false);
   };
 
   const handleSubmit = async () => {
@@ -84,33 +96,69 @@ export default function ConversionKVAdmin() {
         }
       );
 
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error("KV Save failed: " + err);
-      }
+      if (!res.ok) throw new Error(await res.text());
 
       const updated = [
         ...experiments.filter((e) => e.key !== experimentKey),
         { key: experimentKey, ...payload },
       ];
       setExperiments(updated);
-      localStorage.setItem("experiments", JSON.stringify(updated));
       resetForm();
-      alert("Experiment saved to KV!");
+      alert("Experiment saved!");
     } catch (err) {
-      alert("Error saving experiment:\n" + err.message);
+      alert("Save error:\n" + err.message);
     }
   };
 
+  const handleDelete = async (key) => {
+    if (!window.confirm("Delete this experiment?")) return;
+    try {
+      const res = await fetch(`/api/save-experiments?key=${encodeURIComponent(key)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setExperiments(experiments.filter((e) => e.key !== key));
+    } catch (err) {
+      alert("Delete failed:\n" + err.message);
+    }
+  };
+
+  const handleEdit = (exp) => {
+    setExperimentKey(exp.key);
+    setTargetPage(exp.target);
+    setSampleRate(String(exp.sample));
+    setStatus(exp.status || "Build");
+    setVariations([
+      { name: "control", split: "", type: "none", code: "", isControl: true },
+      ...exp.variations.filter((v) => v.name !== "control"),
+    ]);
+    setEditing(true);
+  };
+
+  const bucketed = {
+    Build: [],
+    QA: [],
+    Live: [],
+    Completed: [],
+  };
+
+  for (const exp of experiments) {
+    const s = exp.status || "Build";
+    if (!bucketed[s]) bucketed[s] = [];
+    bucketed[s].push(exp);
+  }
+
   return (
-    <div className="max-w-3xl mx-auto py-10 space-y-6">
+    <div className="max-w-4xl mx-auto py-10 space-y-6">
       <h1 className="text-2xl font-bold mb-2">Conversion Workers – KV Admin</h1>
+
       <Card>
         <CardContent className="space-y-4 pt-6">
           <Input
-            placeholder="Experiment Key (e.g. homepage_test_v1)"
+            placeholder="Experiment Key"
             value={experimentKey}
             onChange={(e) => setExperimentKey(e.target.value)}
+            disabled={editing}
           />
           <Input
             placeholder="Target Page (e.g. /homepage)"
@@ -119,7 +167,7 @@ export default function ConversionKVAdmin() {
           />
           <Input
             type="number"
-            placeholder="Sample % (default: 100)"
+            placeholder="Sample %"
             value={sampleRate}
             onChange={(e) => setSampleRate(e.target.value)}
             min={1}
@@ -139,12 +187,9 @@ export default function ConversionKVAdmin() {
           <div className="space-y-2">
             <h2 className="text-lg font-semibold">Variations</h2>
             {variations.map((v, i) => (
-              <div
-                key={i}
-                className="border p-2 mb-2 rounded flex flex-col gap-2 bg-gray-50"
-              >
+              <div key={i} className="border p-2 mb-2 rounded bg-gray-50 space-y-2">
                 <Input
-                  placeholder="Variation Name"
+                  placeholder="Name"
                   value={v.name}
                   onChange={(e) => updateVariation(i, "name", e.target.value)}
                   disabled={v.isControl}
@@ -154,20 +199,17 @@ export default function ConversionKVAdmin() {
                   placeholder="Split %"
                   value={v.split}
                   onChange={(e) => updateVariation(i, "split", e.target.value)}
-                  min={0}
-                  max={100}
                 />
                 <Input
-                  placeholder="Type (e.g. html, js, none)"
+                  placeholder="Type"
                   value={v.type}
                   onChange={(e) => updateVariation(i, "type", e.target.value)}
                 />
                 <Textarea
-                  placeholder="Code (HTML/JS for variation)"
+                  placeholder="Code"
                   value={v.code}
                   onChange={(e) => updateVariation(i, "code", e.target.value)}
                 />
-                {v.isControl && <span className="text-xs text-gray-700">Control</span>}
               </div>
             ))}
             <Button type="button" onClick={addVariation}>
@@ -177,29 +219,47 @@ export default function ConversionKVAdmin() {
 
           <div className="flex gap-2 pt-2">
             <Button type="button" onClick={handleSubmit}>
-              Save Experiment
+              {editing ? "Update" : "Save"} Experiment
             </Button>
-            <Button type="button" onClick={resetForm} variant="secondary">
+            <Button type="button" variant="secondary" onClick={resetForm}>
               Reset
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <div>
-        <h2 className="text-lg font-semibold">Saved Experiments (local storage)</h2>
-        {experiments.length === 0 ? (
-          <div>No experiments saved yet.</div>
-        ) : (
-          <ul>
-            {experiments.map((exp, idx) => (
-              <li key={idx} className="p-2 border-b">
-                <strong>{exp.key}</strong> &mdash; Target: {exp.target}, Sample: {exp.sample}% | Status: {exp.status} | Variations: {exp.variations.map((v) => v.name).join(", ")}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {Object.entries(bucketed).map(([bucket, items]) => (
+        <div key={bucket}>
+          <h2 className="text-xl font-bold mt-8 mb-2">{bucket} Experiments</h2>
+          {items.length === 0 ? (
+            <div className="text-gray-500">None</div>
+          ) : (
+            <ul className="space-y-2">
+              {items.map((exp) => (
+                <li key={exp.key} className="border rounded p-3">
+                  <div className="font-bold text-md mb-1">{exp.key}</div>
+                  <div className="text-sm mb-2">
+                    Target: {exp.target} | Sample: {exp.sample}% | Status: {exp.status} | Variations:{" "}
+                    {exp.variations.map((v) => v.name).join(", ")}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => handleEdit(exp)} className="bg-orange-500 hover:bg-orange-600">
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleDelete(exp.key)}
+                      variant="destructive"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
