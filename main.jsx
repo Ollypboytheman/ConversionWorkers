@@ -3,7 +3,8 @@ import ReactDOM from "react-dom/client";
 import ConversionKVAdmin from "./src/ConversionKVAdmin.jsx";
 
 // ✅ Tailwind CSS import – make sure this is the first import
-import "./index.css";
+import './src/index.css';
+
 
 
 ReactDOM.createRoot(document.getElementById("root")).render(
