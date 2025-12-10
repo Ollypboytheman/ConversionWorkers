@@ -13,7 +13,6 @@ export default function ConversionKVAdmin() {
   const [experiments, setExperiments] = useState([]);
   const [editing, setEditing] = useState(false);
 
-  // Fetch from KV on mount
   useEffect(() => {
     const load = async () => {
       const res = await fetch("/api/save-experiments");
@@ -27,7 +26,6 @@ export default function ConversionKVAdmin() {
     load();
   }, []);
 
-  // Init control group
   useEffect(() => {
     setVariations([
       {
@@ -150,34 +148,14 @@ export default function ConversionKVAdmin() {
 
   return (
     <div className="max-w-4xl mx-auto py-10 space-y-6">
-      <h1 className="text-2xl font-bold mb-2">Conversion Workers – KV Admin</h1>
+      <h1 className="text-3xl font-extrabold text-gray-800 mb-6">Conversion Workers – KV Admin</h1>
 
       <Card>
         <CardContent className="space-y-4 pt-6">
-          <Input
-            placeholder="Experiment Key"
-            value={experimentKey}
-            onChange={(e) => setExperimentKey(e.target.value)}
-            disabled={editing}
-          />
-          <Input
-            placeholder="Target Page (e.g. /homepage)"
-            value={targetPage}
-            onChange={(e) => setTargetPage(e.target.value)}
-          />
-          <Input
-            type="number"
-            placeholder="Sample %"
-            value={sampleRate}
-            onChange={(e) => setSampleRate(e.target.value)}
-            min={1}
-            max={100}
-          />
-          <select
-            className="border p-2 rounded"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
+          <Input placeholder="Experiment Key" value={experimentKey} onChange={(e) => setExperimentKey(e.target.value)} disabled={editing} />
+          <Input placeholder="Target Page (e.g. /homepage)" value={targetPage} onChange={(e) => setTargetPage(e.target.value)} />
+          <Input type="number" placeholder="Sample %" value={sampleRate} onChange={(e) => setSampleRate(e.target.value)} min={1} max={100} />
+          <select className="border p-2 rounded" value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="Build">Build</option>
             <option value="QA">QA</option>
             <option value="Live">Live</option>
@@ -187,80 +165,52 @@ export default function ConversionKVAdmin() {
           <div className="space-y-2">
             <h2 className="text-lg font-semibold">Variations</h2>
             {variations.map((v, i) => (
-              <div key={i} className="border p-2 mb-2 rounded bg-gray-50 space-y-2">
-                <Input
-                  placeholder="Name"
-                  value={v.name}
-                  onChange={(e) => updateVariation(i, "name", e.target.value)}
-                  disabled={v.isControl}
-                />
-                <Input
-                  type="number"
-                  placeholder="Split %"
-                  value={v.split}
-                  onChange={(e) => updateVariation(i, "split", e.target.value)}
-                />
-                <Input
-                  placeholder="Type"
-                  value={v.type}
-                  onChange={(e) => updateVariation(i, "type", e.target.value)}
-                />
-                <Textarea
-                  placeholder="Code"
-                  value={v.code}
-                  onChange={(e) => updateVariation(i, "code", e.target.value)}
-                />
+              <div key={i} className="border p-4 mb-2 rounded bg-gray-50 space-y-2">
+                <Input placeholder="Name" value={v.name} onChange={(e) => updateVariation(i, "name", e.target.value)} disabled={v.isControl} />
+                <Input type="number" placeholder="Split %" value={v.split} onChange={(e) => updateVariation(i, "split", e.target.value)} />
+                <Input placeholder="Type (none, js, css, html, redirect)" value={v.type} onChange={(e) => updateVariation(i, "type", e.target.value)} />
+                <Textarea placeholder="Code" value={v.code} onChange={(e) => updateVariation(i, "code", e.target.value)} />
               </div>
             ))}
-            <Button type="button" onClick={addVariation}>
-              Add Variation
-            </Button>
+            <Button type="button" onClick={addVariation}>Add Variation</Button>
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button type="button" onClick={handleSubmit}>
-              {editing ? "Update" : "Save"} Experiment
-            </Button>
-            <Button type="button" variant="secondary" onClick={resetForm}>
-              Reset
-            </Button>
+            <Button type="button" onClick={handleSubmit}>{editing ? "Update" : "Save"} Experiment</Button>
+            <Button type="button" variant="secondary" onClick={resetForm}>Reset</Button>
           </div>
         </CardContent>
       </Card>
 
       {Object.entries(bucketed).map(([bucket, items]) => (
         <div key={bucket}>
-          <h2 className="text-xl font-bold mt-8 mb-2">{bucket} Experiments</h2>
+          <h2 className="text-2xl font-bold mt-10 mb-3 text-gray-800">{bucket} Experiments</h2>
           {items.length === 0 ? (
             <div className="text-gray-500">None</div>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-4">
               {items.map((exp) => (
-                <li key={exp.key} className="border rounded p-3">
-                  <div className="font-bold text-md mb-1">{exp.key}</div>
-                  <div className="text-sm mb-2">
-                    Target: {exp.target} | Sample: {exp.sample}% | Status: {exp.status}
-                    <div className="mt-1 ml-2">
-                      <strong>Variations:</strong>
-                      {exp.variations.map((v) => (
-                        <div key={v.name}>
-                          {v.name} — {v.split}% — {v.type}
+                <li key={exp.key} className="border rounded p-4 shadow bg-white">
+                  <div className="font-bold text-lg text-gray-900 mb-2">{exp.key}</div>
+                  <div className="text-sm text-gray-700 mb-2">
+                    Target: <code>{exp.target}</code> | Sample: {exp.sample}% | Status: {exp.status}
+                  </div>
+                  <div className="text-sm text-gray-800">
+                    <strong className="block mb-1">Variations:</strong>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {exp.variations.map((v, i) => (
+                        <div key={i} className="border border-gray-200 p-2 rounded bg-gray-50">
+                          <div className="font-medium">{v.name}</div>
+                          <div className="text-xs text-gray-600">
+                            Split: {v.split}% | Type: {v.type || "none"}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
-
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => handleEdit(exp)} className="bg-orange-500 hover:bg-orange-600">
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleDelete(exp.key)}
-                      variant="destructive"
-                    >
-                      Delete
-                    </Button>
+                  <div className="flex gap-2 mt-4">
+                    <Button size="sm" onClick={() => handleEdit(exp)} className="bg-orange-500 hover:bg-orange-600">Edit</Button>
+                    <Button size="sm" onClick={() => handleDelete(exp.key)} variant="destructive">Delete</Button>
                   </div>
                 </li>
               ))}
