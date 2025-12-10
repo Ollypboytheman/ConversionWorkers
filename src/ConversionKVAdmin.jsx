@@ -4,17 +4,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+const STATUS_OPTIONS = ["Build", "QA", "Live", "Completed"];
+
 export default function ConversionKVAdmin() {
   const [experimentKey, setExperimentKey] = useState("");
   const [targetPage, setTargetPage] = useState("");
   const [sampleRate, setSampleRate] = useState("100");
   const [variations, setVariations] = useState([]);
+  const [status, setStatus] = useState("Build");
   const [experiments, setExperiments] = useState([]);
 
-  // Load saved experiments (local display only)
+  // Load all experiments from KV on mount
   useEffect(() => {
-    const stored = localStorage.getItem("experiments");
-    if (stored) setExperiments(JSON.parse(stored));
+    fetch("/api/get-experiments")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setExperiments(data);
+        } else {
+          console.error("Unexpected data format", data);
+        }
+      })
+      .catch((err) => console.error("Failed to load experiments", err));
   }, []);
 
   // Initialise control group on mount
@@ -47,14 +58,13 @@ export default function ConversionKVAdmin() {
     setExperimentKey("");
     setTargetPage("");
     setSampleRate("100");
+    setStatus("Build");
     setVariations([
       { name: "control", split: "", type: "none", code: "", isControl: true },
     ]);
   };
 
-  // MAIN: Save the experiment config to the API
   const handleSubmit = async () => {
-    // Validate split % = 100
     const total = variations.reduce(
       (acc, v) => acc + parseFloat(v.split || 0),
       0
@@ -64,11 +74,11 @@ export default function ConversionKVAdmin() {
       return;
     }
 
-    // Build object to store
     const payload = {
       key: experimentKey,
       target: targetPage,
       sample: parseFloat(sampleRate),
+      status,
       variations: variations.map((v) => ({
         name: v.name,
         split: parseFloat(v.split || 0),
@@ -88,36 +98,15 @@ export default function ConversionKVAdmin() {
       );
 
       if (!res.ok) {
-  let errorMsg = "Failed to save experiment to KV";
-  try {
-    // Try to parse as JSON first
-    const data = await res.json();
-    errorMsg +=
-      data.error
-        ? `: ${data.error}`
-        : data.message
-        ? `: ${data.message}`
-        : ` (${res.status})`;
-    throw new Error(errorMsg);
-  } catch {
-    // If .json() throws, response is not JSON, try .text()
-    try {
-      const text = await res.text();
-      errorMsg += `: ${text}`;
-    } catch {
-      errorMsg += " (unable to read response body)";
-    }
-    throw new Error(errorMsg);
-  }
-}
+        const err = await res.text();
+        throw new Error("KV Save failed: " + err);
+      }
 
-      // update UI locally
       const updated = [
         ...experiments.filter((e) => e.key !== experimentKey),
         payload,
       ];
       setExperiments(updated);
-      localStorage.setItem("experiments", JSON.stringify(updated));
       resetForm();
       alert("Experiment saved to KV!");
     } catch (err) {
@@ -125,9 +114,37 @@ export default function ConversionKVAdmin() {
     }
   };
 
+  const handleDelete = async (key) => {
+    if (!confirm(`Are you sure you want to delete '${key}'?`)) return;
+    try {
+      await fetch(`/api/delete-experiment?key=${encodeURIComponent(key)}`, {
+        method: "DELETE",
+      });
+      setExperiments(experiments.filter((e) => e.key !== key));
+    } catch (err) {
+      alert("Delete failed: " + err.message);
+    }
+  };
+
+  const startEdit = (exp) => {
+    setExperimentKey(exp.key);
+    setTargetPage(exp.target);
+    setSampleRate(String(exp.sample));
+    setStatus(exp.status || "Build");
+    setVariations([
+      { name: "control", split: "", type: "none", code: "", isControl: true },
+      ...exp.variations.map((v) => ({ ...v, isControl: false })),
+    ]);
+  };
+
+  const experimentsByStatus = STATUS_OPTIONS.reduce((acc, s) => {
+    acc[s] = experiments.filter((e) => e.status === s);
+    return acc;
+  }, {});
+
   return (
-    <div className="max-w-3xl mx-auto py-10 space-y-6">
-      <h1 className="text-2xl font-bold mb-2">Conversion Workers – KV Admin</h1>
+    <div className="max-w-4xl mx-auto py-10 space-y-8">
+      <h1 className="text-2xl font-bold mb-4">Conversion Workers – KV Admin</h1>
       <Card>
         <CardContent className="space-y-4 pt-6">
           <Input
@@ -148,29 +165,31 @@ export default function ConversionKVAdmin() {
             min={1}
             max={100}
           />
+          <select
+            className="border p-2 rounded"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
 
           <div className="space-y-2">
             <h2 className="text-lg font-semibold">Variations</h2>
             {variations.map((v, i) => (
-              <div
-                key={i}
-                className="border p-2 mb-2 rounded flex flex-col gap-2 bg-gray-50"
-              >
+              <div key={i} className="border p-2 rounded bg-gray-50 space-y-2">
                 <Input
                   placeholder="Variation Name"
                   value={v.name}
-                  onChange={(e) =>
-                    updateVariation(i, "name", e.target.value)
-                  }
+                  onChange={(e) => updateVariation(i, "name", e.target.value)}
                   disabled={v.isControl}
                 />
                 <Input
                   type="number"
                   placeholder="Split %"
                   value={v.split}
-                  onChange={(e) =>
-                    updateVariation(i, "split", e.target.value)
-                  }
+                  onChange={(e) => updateVariation(i, "split", e.target.value)}
                   min={0}
                   max={100}
                 />
@@ -192,32 +211,35 @@ export default function ConversionKVAdmin() {
             </Button>
           </div>
 
-          <div className="flex gap-2 pt-2">
-            <Button type="button" onClick={handleSubmit}>
-              Save Experiment
-            </Button>
-            <Button type="button" onClick={resetForm} variant="secondary">
-              Reset
-            </Button>
+          <div className="flex gap-2 pt-4">
+            <Button type="button" onClick={handleSubmit}>Save Experiment</Button>
+            <Button type="button" variant="secondary" onClick={resetForm}>Reset</Button>
           </div>
         </CardContent>
       </Card>
 
-      <div>
-        <h2 className="text-lg font-semibold">Saved Experiments (local storage)</h2>
-        {experiments.length === 0 ? (
-          <div>No experiments saved yet.</div>
-        ) : (
-          <ul>
-            {experiments.map((exp, idx) => (
-              <li key={idx} className="p-2 border-b">
-                <strong>{exp.key}</strong> &mdash; Target: {exp.target}, Sample: {exp.sample}% | Variations:{" "}
-                {exp.variations.map((v) => v.name).join(", ")}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {STATUS_OPTIONS.map((status) => (
+        <div key={status}>
+          <h2 className="text-xl font-bold mt-6 mb-2">{status} Experiments</h2>
+          {experimentsByStatus[status]?.length === 0 ? (
+            <p className="text-gray-500">None</p>
+          ) : (
+            <ul className="space-y-2">
+              {experimentsByStatus[status].map((exp) => (
+                <li key={exp.key} className="p-3 border rounded flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <strong>{exp.key}</strong> — Target: {exp.target}, Sample: {exp.sample}% | Variations: {exp.variations.map(v => v.name).join(", ")}
+                  </div>
+                  <div className="flex gap-2 mt-2 sm:mt-0">
+                    <Button size="sm" onClick={() => startEdit(exp)}>Edit</Button>
+                    <Button size="sm" onClick={() => handleDelete(exp.key)} variant="destructive">Delete</Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
