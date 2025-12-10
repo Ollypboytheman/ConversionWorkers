@@ -1,223 +1,193 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-
-export default function ConversionKVAdmin() {
-  const [experimentKey, setExperimentKey] = useState("");
-  const [targetPage, setTargetPage] = useState("");
-  const [sampleRate, setSampleRate] = useState("100");
-  const [variations, setVariations] = useState([]);
-  const [experiments, setExperiments] = useState([]);
-
-  // Load saved experiments (local display only)
-  useEffect(() => {
-    const stored = localStorage.getItem("experiments");
-    if (stored) setExperiments(JSON.parse(stored));
-  }, []);
-
-  // Initialise control group on mount
-  useEffect(() => {
-    setVariations([
-      {
-        name: "control",
-        split: "",
-        type: "none",
-        code: "",
-        isControl: true,
-      },
-    ]);
-  }, []);
-
-  const addVariation = () => {
-    setVariations([
-      ...variations,
-      { name: "", split: "", type: "", code: "", isControl: false },
-    ]);
-  };
-
-  const updateVariation = (index, field, value) => {
-    const copy = [...variations];
-    copy[index][field] = value;
-    setVariations(copy);
-  };
-
-  const resetForm = () => {
-    setExperimentKey("");
-    setTargetPage("");
-    setSampleRate("100");
-    setVariations([
-      { name: "control", split: "", type: "none", code: "", isControl: true },
-    ]);
-  };
-
-  // MAIN: Save the experiment config to the API
-  const handleSubmit = async () => {
-    // Validate split % = 100
-    const total = variations.reduce(
-      (acc, v) => acc + parseFloat(v.split || 0),
-      0
-    );
-    if (total !== 100) {
-      alert("Total variation split % must equal 100%");
-      return;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Conversion Workers – KV Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
     }
-
-    // Build object to store
-    const payload = {
-      key: experimentKey,
-      target: targetPage,
-      sample: parseFloat(sampleRate),
-      variations: variations.map((v) => ({
-        name: v.name,
-        split: parseFloat(v.split || 0),
-        type: v.type,
-        code: v.code,
-      })),
-    };
-
-    try {
-      const res = await fetch(
-        `/api/save-experiments?key=${encodeURIComponent(experimentKey)}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!res.ok) {
-  let errorMsg = "Failed to save experiment to KV";
-  try {
-    // Try to parse as JSON first
-    const data = await res.json();
-    errorMsg +=
-      data.error
-        ? `: ${data.error}`
-        : data.message
-        ? `: ${data.message}`
-        : ` (${res.status})`;
-    throw new Error(errorMsg);
-  } catch {
-    // If .json() throws, response is not JSON, try .text()
-    try {
-      const text = await res.text();
-      errorMsg += `: ${text}`;
-    } catch {
-      errorMsg += " (unable to read response body)";
+    input, select, textarea, button {
+      margin: 0.25rem 0.5rem 0.5rem 0;
     }
-    throw new Error(errorMsg);
-  }
-}
-
-      // update UI locally
-      const updated = [
-        ...experiments.filter((e) => e.key !== experimentKey),
-        payload,
-      ];
-      setExperiments(updated);
-      localStorage.setItem("experiments", JSON.stringify(updated));
-      resetForm();
-      alert("Experiment saved to KV!");
-    } catch (err) {
-      alert("Error saving experiment:\n" + err.message);
+    .experiment-group {
+      margin-top: 2rem;
     }
-  };
+    .experiment-group h2 {
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid #ccc;
+    }
+    .experiment-item {
+      margin: 0.5rem 0;
+    }
+    .btn {
+      margin-left: 0.5rem;
+      padding: 2px 8px;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Conversion Workers – KV Admin</h1>
 
-  return (
-    <div className="max-w-3xl mx-auto py-10 space-y-6">
-      <h1 className="text-2xl font-bold mb-2">Conversion Workers – KV Admin</h1>
-      <Card>
-        <CardContent className="space-y-4 pt-6">
-          <Input
-            placeholder="Experiment Key (e.g. homepage_test_v1)"
-            value={experimentKey}
-            onChange={(e) => setExperimentKey(e.target.value)}
-          />
-          <Input
-            placeholder="Target Page (e.g. /homepage)"
-            value={targetPage}
-            onChange={(e) => setTargetPage(e.target.value)}
-          />
-          <Input
-            type="number"
-            placeholder="Sample % (default: 100)"
-            value={sampleRate}
-            onChange={(e) => setSampleRate(e.target.value)}
-            min={1}
-            max={100}
-          />
+  <label>Experiment Key: <input id="experiment-key" placeholder="e.g. homepage-banner" /></label>
+  <label>Target Page: <input id="target" placeholder="/homepage" /></label>
+  <label>Sample %: <input id="sample" type="number" value="100" /></label>
+  <label>Status: 
+    <select id="experiment-status">
+      <option value="Build">Build</option>
+      <option value="QA">QA</option>
+      <option value="Live">Live</option>
+      <option value="Completed">Completed</option>
+    </select>
+  </label>
 
-          <div className="space-y-2">
-            <h2 className="text-lg font-semibold">Variations</h2>
-            {variations.map((v, i) => (
-              <div
-                key={i}
-                className="border p-2 mb-2 rounded flex flex-col gap-2 bg-gray-50"
-              >
-                <Input
-                  placeholder="Variation Name"
-                  value={v.name}
-                  onChange={(e) =>
-                    updateVariation(i, "name", e.target.value)
-                  }
-                  disabled={v.isControl}
-                />
-                <Input
-                  type="number"
-                  placeholder="Split %"
-                  value={v.split}
-                  onChange={(e) =>
-                    updateVariation(i, "split", e.target.value)
-                  }
-                  min={0}
-                  max={100}
-                />
-                <Input
-                  placeholder="Type (e.g. html, js, none)"
-                  value={v.type}
-                  onChange={(e) => updateVariation(i, "type", e.target.value)}
-                />
-                <Textarea
-                  placeholder="Code (HTML/JS for variation)"
-                  value={v.code}
-                  onChange={(e) => updateVariation(i, "code", e.target.value)}
-                />
-                {v.isControl && <span className="text-xs text-gray-700">Control</span>}
-              </div>
-            ))}
-            <Button type="button" onClick={addVariation}>
-              Add Variation
-            </Button>
-          </div>
+  <h2>Variations</h2>
+  <div id="variations"></div>
+  <button onclick="addVariation()">Add Variation</button><br><br>
 
-          <div className="flex gap-2 pt-2">
-            <Button type="button" onClick={handleSubmit}>
-              Save Experiment
-            </Button>
-            <Button type="button" onClick={resetForm} variant="secondary">
-              Reset
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+  <button onclick="saveExperiment()">💾 Save Experiment</button>
+  <button onclick="resetForm()">Reset</button>
 
-      <div>
-        <h2 className="text-lg font-semibold">Saved Experiments (local storage)</h2>
-        {experiments.length === 0 ? (
-          <div>No experiments saved yet.</div>
-        ) : (
-          <ul>
-            {experiments.map((exp, idx) => (
-              <li key={idx} className="p-2 border-b">
-                <strong>{exp.key}</strong> &mdash; Target: {exp.target}, Sample: {exp.sample}% | Variations:{" "}
-                {exp.variations.map((v) => v.name).join(", ")}
-              </li>
-            ))}
-          </ul>
-        )}
+  <div id="experiments-container"></div>
+
+  <script>
+    const API_BASE = "/api";
+
+    const variationHTML = (name = "", split = 50, type = "none", code = "") => `
+      <div class="variation">
+        <input placeholder="Name" value="${name}" />
+        <input placeholder="Split %" type="number" value="${split}" />
+        <select>
+          <option value="none" ${type === "none" ? "selected" : ""}>none</option>
+          <option value="html" ${type === "html" ? "selected" : ""}>html</option>
+          <option value="js" ${type === "js" ? "selected" : ""}>js</option>
+        </select>
+        <textarea placeholder="Code (HTML/JS for variation)">${code}</textarea>
       </div>
-    </div>
-  );
-}
+    `;
+
+    function addVariation(name, split, type, code) {
+      const div = document.createElement("div");
+      div.innerHTML = variationHTML(name, split, type, code);
+      document.getElementById("variations").appendChild(div);
+    }
+
+    function resetForm() {
+      document.getElementById("experiment-key").value = "";
+      document.getElementById("target").value = "";
+      document.getElementById("sample").value = 100;
+      document.getElementById("experiment-status").value = "Build";
+      document.getElementById("variations").innerHTML = "";
+    }
+
+    async function saveExperiment() {
+      const key = document.getElementById("experiment-key").value;
+      const target = document.getElementById("target").value;
+      const sample = parseInt(document.getElementById("sample").value, 10);
+      const status = document.getElementById("experiment-status").value;
+
+      const variationDivs = document.querySelectorAll(".variation");
+      const variations = Array.from(variationDivs).map(div => {
+        const [nameInput, splitInput, typeSelect, codeTextarea] = div.querySelectorAll("input, select, textarea");
+        return {
+          name: nameInput.value,
+          split: parseInt(splitInput.value, 10),
+          type: typeSelect.value,
+          code: codeTextarea.value,
+        };
+      });
+
+      const experimentData = {
+        key,
+        target,
+        sample,
+        status,
+        variations
+      };
+
+      const res = await fetch(`${API_BASE}/save-experiments?key=${encodeURIComponent(key)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(experimentData)
+      });
+
+      if (res.ok) {
+        alert("Experiment saved to KV!");
+        loadExperiments();
+        resetForm();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(`Error saving experiment:\n${err.message || res.statusText}`);
+      }
+    }
+
+    async function deleteExperiment(key) {
+      if (!confirm("Are you sure you want to delete this experiment?")) return;
+      await fetch(`${API_BASE}/delete-experiment?key=${encodeURIComponent(key)}`, { method: "DELETE" });
+      loadExperiments();
+    }
+
+    async function endExperiment(key) {
+      const res = await fetch(`${API_BASE}/update-experiment?key=${encodeURIComponent(key)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Completed" })
+      });
+      loadExperiments();
+    }
+
+    function editExperiment(data) {
+      document.getElementById("experiment-key").value = data.key;
+      document.getElementById("target").value = data.target || "";
+      document.getElementById("sample").value = data.sample || 100;
+      document.getElementById("experiment-status").value = data.status || "Build";
+      document.getElementById("variations").innerHTML = "";
+      (data.variations || []).forEach(v => {
+        addVariation(v.name, v.split, v.type, v.code);
+      });
+    }
+
+    async function loadExperiments() {
+      const res = await fetch(`${API_BASE}/list-experiments`);
+      const experiments = await res.json();
+
+      const grouped = {
+        Build: [],
+        QA: [],
+        Live: [],
+        Completed: [],
+      };
+
+      for (const exp of experiments) {
+        grouped[exp.status || "Build"].push(exp);
+      }
+
+      const container = document.getElementById("experiments-container");
+      container.innerHTML = "";
+
+      for (const status of ["Build", "QA", "Live", "Completed"]) {
+        const group = document.createElement("div");
+        group.className = "experiment-group";
+        group.innerHTML = `<h2>${status} Experiments</h2>`;
+        grouped[status].forEach(exp => {
+          const div = document.createElement("div");
+          div.className = "experiment-item";
+          div.innerHTML = `
+            <strong>${exp.key}</strong> — Target: ${exp.target}, Sample: ${exp.sample}% 
+            | Variations: ${exp.variations.map(v => v.name).join(", ")}
+            <button class="btn" onclick='editExperiment(${JSON.stringify(exp)})'>✏️ Edit</button>
+            <button class="btn" onclick='endExperiment("${exp.key}")'>⏹ End</button>
+            <button class="btn" onclick='deleteExperiment("${exp.key}")'>🗑 Delete</button>
+          `;
+          group.appendChild(div);
+        });
+        container.appendChild(group);
+      }
+    }
+
+    loadExperiments();
+  </script>
+</body>
+</html>
