@@ -41,7 +41,7 @@ export default function ConversionKVAdmin() {
   const addVariation = () => {
     setVariations([
       ...variations,
-      { name: "", split: "", type: "", code: "", isControl: false },
+      { name: "", split: "", type: "inject", code: "", isControl: false },
     ]);
   };
 
@@ -81,6 +81,11 @@ export default function ConversionKVAdmin() {
         split: parseFloat(v.split || 0),
         type: v.type,
         code: v.code,
+        redirectUrl: v.redirectUrl,
+        rewriteUrl: v.rewriteUrl,
+        js: v.js,
+        css: v.css,
+        html: v.html,
       })),
     };
 
@@ -168,8 +173,28 @@ export default function ConversionKVAdmin() {
               <div key={i} className="border p-4 mb-2 rounded bg-gray-50 space-y-2">
                 <Input placeholder="Name" value={v.name} onChange={(e) => updateVariation(i, "name", e.target.value)} disabled={v.isControl} />
                 <Input type="number" placeholder="Split %" value={v.split} onChange={(e) => updateVariation(i, "split", e.target.value)} />
-                <Input placeholder="Type (none, js, css, html, redirect)" value={v.type} onChange={(e) => updateVariation(i, "type", e.target.value)} />
-                <Textarea placeholder="Code" value={v.code} onChange={(e) => updateVariation(i, "code", e.target.value)} />
+                <select className="border p-2 rounded w-full" value={v.type} onChange={(e) => updateVariation(i, "type", e.target.value)}>
+                  <option value="none">None</option>
+                  <option value="inject">Inject (JS/CSS/HTML)</option>
+                  <option value="rewrite">Rewrite</option>
+                  <option value="redirect">Redirect</option>
+                </select>
+
+                {v.type === "inject" && (
+                  <>
+                    <Textarea placeholder="JS" value={v.js || ""} onChange={(e) => updateVariation(i, "js", e.target.value)} />
+                    <Textarea placeholder="CSS" value={v.css || ""} onChange={(e) => updateVariation(i, "css", e.target.value)} />
+                    <Textarea placeholder="HTML" value={v.html || ""} onChange={(e) => updateVariation(i, "html", e.target.value)} />
+                  </>
+                )}
+
+                {v.type === "redirect" && (
+                  <Input placeholder="Redirect URL" value={v.redirectUrl || ""} onChange={(e) => updateVariation(i, "redirectUrl", e.target.value)} />
+                )}
+
+                {v.type === "rewrite" && (
+                  <Input placeholder="Rewrite URL (internal)" value={v.rewriteUrl || ""} onChange={(e) => updateVariation(i, "rewriteUrl", e.target.value)} />
+                )}
               </div>
             ))}
             <Button type="button" onClick={addVariation}>Add Variation</Button>
