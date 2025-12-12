@@ -55,7 +55,9 @@ export const onRequestGet = async ({ env }) => {
 
 // DELETE = remove a specific experiment
 export const onRequestDelete = async ({ request, env }) => {
-  const { key } = new URL(request.url).searchParams;
+  const url = new URL(request.url, 'http://localhost'); // Add base to avoid errors
+  const key = url.searchParams.get("key"); // ✅ Correct way to access query param
+
   if (!key) return new Response("Missing key", { status: 400 });
 
   try {
@@ -63,7 +65,8 @@ export const onRequestDelete = async ({ request, env }) => {
     return new Response("Deleted", { status: 200 });
   } catch (err) {
     return new Response(JSON.stringify({
-      message: "Delete failed", error: err?.message || String(err)
+      message: "Delete failed",
+      error: err?.message || String(err)
     }), {
       status: 500,
       headers: { "Content-Type": "application/json" }
