@@ -198,12 +198,22 @@ export default function ConversionKVAdmin() {
 
   return (
     <div className={pageWrap}>
-      <div className="space-y-2">
-        <h1 className={title}>Conversion Workers — KV Admin</h1>
-        <p className="text-muted-foreground">
-          Edge-first experimentation config. Dark UI + Conversion Workers green.
-        </p>
-      </div>
+      <div className="flex items-center gap-4 mb-8">
+  <img
+    src={logo}
+    alt="Conversion Workers"
+    className="h-10 w-auto"
+  />
+
+  <div>
+    <h1 className="text-3xl font-extrabold text-foreground">
+      Conversion Workers — KV Admin
+    </h1>
+    <p className="text-sm text-muted-foreground">
+      Edge-first experimentation config
+    </p>
+  </div>
+</div>
 
       {/* Editor */}
       <Card className={cardClass}>
