@@ -4,11 +4,12 @@
 
 @layer base {
   :root {
-    /* defaults (light) – optional, but safe */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
+
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
@@ -35,17 +36,16 @@
   }
 
   .dark {
-    --background: 220 33% 3%;         /* ~ #05060A */
+    --background: 220 33% 3%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 11%;              /* ~ #111827 */
+    --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
 
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    /* Conversion Workers green */
-    --primary: 153 58% 53%;           /* #3CCF91 */
+    --primary: 153 58% 53%;
     --primary-foreground: 220 33% 3%;
 
     --secondary: 220 14% 15%;
@@ -63,8 +63,6 @@
     --border: 220 14% 18%;
     --input: 220 14% 18%;
     --ring: 153 58% 53%;
-
-    --radius: 0.9rem;
   }
 
   * {
