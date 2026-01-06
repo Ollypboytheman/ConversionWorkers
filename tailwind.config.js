@@ -1,71 +1,34 @@
-/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,jsx,ts,tsx}",
-  ],
-  darkMode: "class",
-  theme: {
-    extend: {
-      colors: {
-        /* Brand */
-        cw: {
-          green: "#3CCF91",       // primary CTA / actions
-          greenDark: "#1F9D55",   // hover / emphasis
-          greenSoft: "rgba(60,207,145,0.15)",
-        },
+.dark {
+  --background: 220 33% 3%;          /* ~ #05060A */
+  --foreground: 210 40% 98%;
 
-        /* Backgrounds */
-        bg: {
-          main: "#05060A",        // page background
-          panel: "#0B1020",       // cards / panels
-          card: "#111827",        // inner cards
-        },
+  --card: 222 47% 11%;               /* ~ #111827 */
+  --card-foreground: 210 40% 98%;
 
-        /* Borders & lines */
-        border: {
-          subtle: "rgba(255,255,255,0.08)",
-          strong: "rgba(255,255,255,0.16)",
-        },
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 98%;
 
-        /* Text */
-        text: {
-          primary: "rgba(255,255,255,0.92)",
-          secondary: "rgba(255,255,255,0.70)",
-          muted: "rgba(255,255,255,0.55)",
-        },
+  /* Conversion Workers green */
+  --primary: 153 58% 53%;            /* #3CCF91 */
+  --primary-foreground: 220 33% 3%;  /* text on green */
 
-        /* Status (experiments lifecycle) */
-        status: {
-          build: "#64748B",       // slate
-          qa: "#F59E0B",          // amber
-          live: "#22C55E",        // green
-          completed: "#6366F1",  // indigo
-        },
-      },
+  --secondary: 220 14% 15%;
+  --secondary-foreground: 210 40% 98%;
 
-      borderRadius: {
-        lg: "16px",
-        xl: "20px",
-      },
+  --muted: 220 14% 15%;
+  --muted-foreground: 215 20% 65%;
 
-      boxShadow: {
-        panel: "0 20px 60px rgba(0,0,0,0.45)",
-        glow: "0 0 0 1px rgba(60,207,145,0.35)",
-      },
+  --accent: 153 58% 53%;
+  --accent-foreground: 220 33% 3%;
 
-      fontFamily: {
-        sans: [
-          "Inter",
-          "system-ui",
-          "-apple-system",
-          "Segoe UI",
-          "Roboto",
-          "Arial",
-          "sans-serif",
-        ],
-      },
-    },
-  },
-  plugins: [],
-};
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 220 14% 18%;
+  --input: 220 14% 18%;
+
+  /* ring highlights */
+  --ring: 153 58% 53%;
+
+  --radius: 0.9rem;
+}
