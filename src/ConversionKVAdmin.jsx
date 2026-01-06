@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import logo from "./logo.webp";
 
 export default function ConversionKVAdmin() {
   const [experimentKey, setExperimentKey] = useState("");
