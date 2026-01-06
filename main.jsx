@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./src/index.css";
-import ConversionKVAdmin from "./ConversionKVAdmin.jsx";
+import ConversionKVAdmin from "./src/ConversionKVAdmin.jsx";
 
 // Force dark mode tokens to apply everywhere
 document.documentElement.classList.add("dark");
