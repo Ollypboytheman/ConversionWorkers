@@ -4,7 +4,8 @@ export function Card({ children, className = "", ...rest }) {
   return (
     <div
       className={
-        "border rounded-lg shadow-sm bg-white p-4 " + className
+        "rounded-lg border border-border bg-card text-card-foreground shadow-sm " +
+        className
       }
       {...rest}
     >
@@ -15,7 +16,7 @@ export function Card({ children, className = "", ...rest }) {
 
 export function CardContent({ children, className = "", ...rest }) {
   return (
-    <div className={"mt-2 " + className} {...rest}>
+    <div className={"p-6 " + className} {...rest}>
       {children}
     </div>
   );
