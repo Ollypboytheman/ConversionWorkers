@@ -202,7 +202,7 @@ export default function ConversionKVAdmin() {
   <img
     src={logo}
     alt="Conversion Workers"
-    className="h-10 w-auto"
+    className="h-16 w-auto"
   />
 
   <div>
