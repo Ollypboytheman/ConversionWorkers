@@ -1,34 +1,48 @@
-.dark {
-  --background: 220 33% 3%;          /* ~ #05060A */
-  --foreground: 210 40% 98%;
+/** @type {import('tailwindcss').Config} */
+export default {
+  darkMode: ["class"],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        // shadcn-style tokens driven by CSS variables
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
 
-  --card: 222 47% 11%;               /* ~ #111827 */
-  --card-foreground: 210 40% 98%;
+        card: "hsl(var(--card))",
+        "card-foreground": "hsl(var(--card-foreground))",
 
-  --popover: 222 47% 11%;
-  --popover-foreground: 210 40% 98%;
+        popover: "hsl(var(--popover))",
+        "popover-foreground": "hsl(var(--popover-foreground))",
 
-  /* Conversion Workers green */
-  --primary: 153 58% 53%;            /* #3CCF91 */
-  --primary-foreground: 220 33% 3%;  /* text on green */
+        primary: "hsl(var(--primary))",
+        "primary-foreground": "hsl(var(--primary-foreground))",
 
-  --secondary: 220 14% 15%;
-  --secondary-foreground: 210 40% 98%;
+        secondary: "hsl(var(--secondary))",
+        "secondary-foreground": "hsl(var(--secondary-foreground))",
 
-  --muted: 220 14% 15%;
-  --muted-foreground: 215 20% 65%;
+        muted: "hsl(var(--muted))",
+        "muted-foreground": "hsl(var(--muted-foreground))",
 
-  --accent: 153 58% 53%;
-  --accent-foreground: 220 33% 3%;
+        accent: "hsl(var(--accent))",
+        "accent-foreground": "hsl(var(--accent-foreground))",
 
-  --destructive: 0 62% 30%;
-  --destructive-foreground: 210 40% 98%;
+        destructive: "hsl(var(--destructive))",
+        "destructive-foreground": "hsl(var(--destructive-foreground))",
 
-  --border: 220 14% 18%;
-  --input: 220 14% 18%;
-
-  /* ring highlights */
-  --ring: 153 58% 53%;
-
-  --radius: 0.9rem;
-}
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+    },
+  },
+  plugins: [],
+};
